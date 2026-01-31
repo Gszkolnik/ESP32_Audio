@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Audio Player</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ESP32 Audio Player</h1>
+            <div class="status-bar">
+                <span id="time">--:--:--</span>
+                <span id="wifi-status" class="wifi-icon">WiFi: --</span>
+            </div>
+                    <div class="diag-bar">
+                <span>IDLE0: <strong id="diag-idle0">-</strong>%</span>
+                <span>IDLE1: <strong id="diag-idle1">-</strong>%</span>
+                <span>BUF: <strong id="diag-buffer">-</strong>%</span>
+                <span>RAM: <strong id="diag-ram">-</strong>KB</span>
+                <span>MIN: <strong id="diag-ram-min">-</strong>KB</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Now Playing -->
+            <section class="now-playing">
+                <div class="player-info">
+                    <div id="player-state" class="state">Idle</div>
+                    <div id="track-title" class="title">-</div>
+                    <div id="track-artist" class="artist">-</div>
+                </div>
+
+                <div class="player-controls">
+                    <button id="btn-stop" class="control-btn" title="Stop">
+                        <svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12"/></svg>
+                    </button>
+                    <button id="btn-play-pause" class="control-btn primary" title="Play/Pause">
+                        <svg id="icon-play" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                        <svg id="icon-pause" viewBox="0 0 24 24" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                    </button>
+                </div>
+
+                <div class="volume-control">
+                    <svg viewBox="0 0 24 24" class="volume-icon"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+                    <input type="range" id="volume-slider" min="0" max="100" value="50">
+                    <span id="volume-value">50%</span>
+                </div>
+            </section>
+
+            <!-- Tabs -->
+            <nav class="tabs">
+                <button class="tab active" data-tab="radio">Radio</button>
+                <button class="tab" data-tab="bluetooth">Bluetooth</button>
+                <button class="tab" data-tab="alarms">Budzik</button>
+                <button class="tab" data-tab="audio">Audio</button>
+                <button class="tab" data-tab="settings">System</button>
+            </nav>
+
+            <!-- Radio Tab -->
+            <section id="tab-radio" class="tab-content active">
+                <div class="section-header">
+                    <h2>Stacje radiowe</h2>
+                    <button id="btn-filter-favorites" class="btn-filter" title="Pokaz tylko ulubione">★ Ulubione</button>
+                </div>
+                <div id="stations-list" class="stations-grid">
+                    <!-- Stations loaded dynamically -->
+                </div>
+                <button id="btn-add-station" class="btn-secondary">+ Dodaj stacje</button>
+
+                <!-- Wyszukiwanie stacji -->
+                <div class="search-section">
+                    <h3>Szukaj stacji</h3>
+                    <div class="search-controls">
+                        <select id="search-country">
+                            <option value="">Wszystkie kraje</option>
+                        </select>
+                        <input type="text" id="search-query" placeholder="Nazwa stacji lub tag...">
+                        <button id="btn-search" class="btn-primary">Szukaj</button>
+                    </div>
+                    <div class="search-tags">
+                        <span class="tag-chip" data-tag="rock">rock</span>
+                        <span class="tag-chip" data-tag="pop">pop</span>
+                        <span class="tag-chip" data-tag="jazz">jazz</span>
+                        <span class="tag-chip" data-tag="classical">classical</span>
+                        <span class="tag-chip" data-tag="news">news</span>
+                        <span class="tag-chip" data-tag="electronic">electronic</span>
+                    </div>
+                </div>
+
+                <div id="search-results-section" class="search-results-section" style="display:none">
+                    <h3>Wyniki wyszukiwania <span id="search-count"></span></h3>
+                    <div id="search-results" class="stations-grid">
+                        <!-- Search results loaded dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Bluetooth Tab -->
+            <section id="tab-bluetooth" class="tab-content">
+                <h2>Bluetooth Audio</h2>
+
+                <div class="bt-status-card">
+                    <div class="bt-status">
+                        <span>Status:</span>
+                        <span id="bt-source-state" class="bt-state">Nieaktywny</span>
+                    </div>
+                    <div id="bt-connected-device" class="bt-connected" style="display:none">
+                        <span>Polaczony z:</span>
+                        <span id="bt-device-name">-</span>
+                    </div>
+                </div>
+
+                <div class="bt-controls">
+                    <button id="btn-bt-init" class="btn-primary">Wlacz Bluetooth Source</button>
+                    <button id="btn-bt-deinit" class="btn-secondary" style="display:none">Wylacz Bluetooth</button>
+                </div>
+
+                <div id="bt-scan-section" class="bt-scan-section" style="display:none">
+                    <div class="section-header">
+                        <h3>Urzadzenia Bluetooth</h3>
+                        <button id="btn-bt-scan" class="btn-primary">Skanuj</button>
+                    </div>
+                    <p class="bt-hint">Wyszukaj glosniki lub sluchawki Bluetooth w poblizu</p>
+
+                    <div id="bt-devices-list" class="bt-devices-list">
+                        <!-- Devices loaded dynamically -->
+                    </div>
+
+                    <div id="bt-scanning" class="bt-scanning" style="display:none">
+                        <div class="spinner"></div>
+                        <span>Skanowanie...</span>
+                        <button id="btn-bt-stop-scan" class="btn-secondary">Zatrzymaj</button>
+                    </div>
+                </div>
+
+                <div id="bt-connection-section" class="bt-connection-section" style="display:none">
+                    <h3>Polaczenie</h3>
+                    <div class="bt-connection-info">
+                        <div class="bt-device-info">
+                            <span class="bt-device-icon">🔊</span>
+                            <div>
+                                <div id="bt-connected-name" class="bt-name">-</div>
+                                <div id="bt-connected-bda" class="bt-bda">-</div>
+                            </div>
+                        </div>
+                        <div id="bt-streaming-status" class="bt-streaming">
+                            <span class="status-dot"></span>
+                            <span id="bt-streaming-text">Gotowy</span>
+                        </div>
+                    </div>
+                    <button id="btn-bt-disconnect" class="btn-danger">Rozlacz</button>
+                </div>
+            </section>
+
+            <!-- Alarms Tab -->
+            <section id="tab-alarms" class="tab-content">
+                <h2>Alarmy</h2>
+                <div id="alarms-list" class="alarms-list">
+                    <!-- Alarms loaded dynamically -->
+                </div>
+                <button id="btn-add-alarm" class="btn-secondary">+ Dodaj alarm</button>
+            </section>
+
+            <!-- Audio Tab -->
+            <section id="tab-audio" class="tab-content">
+                <h2>Ustawienia dzwieku</h2>
+
+                <div class="settings-group">
+                    <h3>Equalizer 10-pasmowy</h3>
+                    <div class="eq-presets">
+                        <button class="eq-preset active" data-preset="0">Flat</button>
+                        <button class="eq-preset" data-preset="1">Rock</button>
+                        <button class="eq-preset" data-preset="2">Pop</button>
+                        <button class="eq-preset" data-preset="3">Jazz</button>
+                        <button class="eq-preset" data-preset="4">Classical</button>
+                        <button class="eq-preset" data-preset="5">Bass+</button>
+                        <button class="eq-preset" data-preset="6">Vocal</button>
+                        <button class="eq-preset" data-preset="7">Electronic</button>
+                    </div>
+                    <div class="eq-sliders eq-10band">
+                        <div class="eq-slider" data-band="0">
+                            <span class="eq-db">0</span>
+                            <input type="range" min="0" max="24" value="12">
+                            <label>31</label>
+                        </div>
+                        <div class="eq-slider" data-band="1">
+                            <span class="eq-db">0</span>
+                            <input type="range" min="0" max="24" value="12">
+                            <label>62</label>
+                        </div>
+                        <div class="eq-slider" data-band="2">
+                            <span class="eq-db">0</span>
+                            <input type="range" min="0" max="24" value="12">
+                            <label>125</label>
+                        </div>
+                        <div class="eq-slider" data-band="3">
+                            <span class="eq-db">0</span>
+                            <input type="range" min="0" max="24" value="12">
+                            <label>250</label>
+                        </div>
+                        <div class="eq-slider" data-band="4">
+                            <span class="eq-db">0</span>
+                            <input type="range" min="0" max="24" value="12">
+                            <label>500</label>
+                        </div>
+                        <div class="eq-slider" data-band="5">
+                            <span class="eq-db">0</span>
+                            <input type="range" min="0" max="24" value="12">
+                            <label>1k</label>
+                        </div>
+                        <div class="eq-slider" data-band="6">
+                            <span class="eq-db">0</span>
+                            <input type="range" min="0" max="24" value="12">
+                            <label>2k</label>
+                        </div>
+                        <div class="eq-slider" data-band="7">
+                            <span class="eq-db">0</span>
+                            <input type="range" min="0" max="24" value="12">
+                            <label>4k</label>
+                        </div>
+                        <div class="eq-slider" data-band="8">
+                            <span class="eq-db">0</span>
+                            <input type="range" min="0" max="24" value="12">
+                            <label>8k</label>
+                        </div>
+                        <div class="eq-slider" data-band="9">
+                            <span class="eq-db">0</span>
+                            <input type="range" min="0" max="24" value="12">
+                            <label>16k</label>
+                        </div>
+                    </div>
+                    <div class="eq-scale">
+                        <span>+12 dB</span>
+                        <span>0 dB</span>
+                        <span>-12 dB</span>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Balans</h3>
+                    <div class="balance-control">
+                        <span>L</span>
+                        <input type="range" id="balance-slider" min="-100" max="100" value="0">
+                        <span>R</span>
+                    </div>
+                    <div style="text-align:center;color:var(--text-muted);font-size:0.9rem;">
+                        <span id="balance-val">Srodek</span>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Efekty</h3>
+                    <div class="effect-toggles">
+                        <label class="effect-toggle">
+                            <input type="checkbox" id="fx-bass-boost">
+                            <span>Bass Boost</span>
+                        </label>
+                        <label class="effect-toggle">
+                            <input type="checkbox" id="fx-loudness">
+                            <span>Loudness</span>
+                        </label>
+                        <label class="effect-toggle">
+                            <input type="checkbox" id="fx-stereo-wide">
+                            <span>Stereo Wide</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button id="btn-reset-audio" class="btn-secondary">Resetuj do domyslnych</button>
+            </section>
+
+            <!-- Settings Tab -->
+            <section id="tab-settings" class="tab-content">
+                <h2>Ustawienia</h2>
+
+                <div class="settings-group">
+                    <h3>WiFi</h3>
+                    <label>SSID: <input type="text" id="wifi-ssid" placeholder="Nazwa sieci"></label>
+                    <label>Haslo: <input type="password" id="wifi-password" placeholder="********"></label>
+                    <p>IP: <span id="device-ip">-</span></p>
+                    <p>RSSI: <span id="wifi-rssi">-</span> dBm</p>
+                    <p>Uptime: <span id="device-uptime">-</span></p>
+                    <button id="btn-save-wifi" class="btn-primary">Zapisz WiFi</button>
+                </div>
+
+                <div class="settings-group">
+                    <h3>MQTT</h3>
+                    <label>Serwer: <input type="text" id="mqtt-server" placeholder="192.168.0.34"></label>
+                    <label>Port: <input type="number" id="mqtt-port" value="1883"></label>
+                    <label>User: <input type="text" id="mqtt-user"></label>
+                    <label>Password: <input type="password" id="mqtt-password"></label>
+                    <button id="btn-save-mqtt" class="btn-primary">Zapisz</button>
+                </div>
+
+                <div class="settings-group">
+                    <h3>System</h3>
+                    <p>Wersja: <span id="firmware-version">1.0.0</span></p>
+                    <button id="btn-restart" class="btn-danger">Restart</button>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Aktualizacja OTA</h3>
+                    <p>Aktualna wersja: <span id="ota-current-version">-</span></p>
+                    <div class="ota-upload">
+                        <label>Plik firmware (.bin):
+                            <input type="file" id="ota-file" accept=".bin">
+                        </label>
+                        <button id="btn-ota-upload" class="btn-primary">Wgraj firmware</button>
+                    </div>
+                    <div class="ota-url">
+                        <label>Lub URL do firmware:
+                            <input type="text" id="ota-url" placeholder="http://...">
+                        </label>
+                        <button id="btn-ota-url" class="btn-secondary">Pobierz z URL</button>
+                    </div>
+                    <div id="ota-progress" class="ota-progress" style="display:none">
+                        <div class="progress-bar">
+                            <div id="ota-progress-bar" class="progress-fill"></div>
+                        </div>
+                        <span id="ota-progress-text">0%</span>
+                        <span id="ota-status"></span>
+                    </div>
+                    <button id="btn-ota-rollback" class="btn-danger" style="display:none">Przywroc poprzednia wersje</button>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Reset</h3>
+                    <p>Przywroc ustawienia fabryczne - usuwa stacje, alarmy i ustawienia.</p>
+                    <button id="btn-factory-reset" class="btn-danger">Przywroc fabryczne</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal: Add Station -->
+    <div id="modal-station" class="modal">
+        <div class="modal-content">
+            <h3>Dodaj stacje</h3>
+            <label>Nazwa: <input type="text" id="station-name" placeholder="VOX FM"></label>
+            <label>URL: <input type="text" id="station-url" placeholder="https://..."></label>
+            <div class="modal-buttons">
+                <button id="btn-cancel-station" class="btn-secondary">Anuluj</button>
+                <button id="btn-save-station" class="btn-primary">Zapisz</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add Alarm -->
+    <div id="modal-alarm" class="modal">
+        <div class="modal-content">
+            <h3>Dodaj alarm</h3>
+            <label>Nazwa: <input type="text" id="alarm-name" placeholder="Poranek"></label>
+            <div class="time-picker">
+                <input type="number" id="alarm-hour" min="0" max="23" value="7" placeholder="HH">
+                <span>:</span>
+                <input type="number" id="alarm-minute" min="0" max="59" value="0" placeholder="MM">
+            </div>
+            <div class="days-picker">
+                <label><input type="checkbox" data-day="1" checked> Pn</label>
+                <label><input type="checkbox" data-day="2" checked> Wt</label>
+                <label><input type="checkbox" data-day="4" checked> Sr</label>
+                <label><input type="checkbox" data-day="8" checked> Cz</label>
+                <label><input type="checkbox" data-day="16" checked> Pt</label>
+                <label><input type="checkbox" data-day="32"> So</label>
+                <label><input type="checkbox" data-day="64"> Nd</label>
+            </div>
+            <label>Zrodlo:
+                <select id="alarm-source">
+                    <option value="0">Radio</option>
+                    <option value="1">Dzwiek</option>
+                    <option value="2">Spotify</option>
+                </select>
+            </label>
+            <label>Stacja/Plik: <select id="alarm-source-uri"></select></label>
+            <label>Glosnosc: <input type="range" id="alarm-volume" min="0" max="100" value="70"></label>
+            <div class="modal-buttons">
+                <button id="btn-cancel-alarm" class="btn-secondary">Anuluj</button>
+                <button id="btn-save-alarm" class="btn-primary">Zapisz</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

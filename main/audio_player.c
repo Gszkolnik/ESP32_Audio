@@ -105,16 +105,34 @@ int audio_player_get_buffer_level(void)
     return current_buffer_percent;
 }
 
+// Get real buffer fill level from I2S input ringbuffer (MP3 output)
+static int get_real_buffer_level(void)
+{
+    if (i2s_stream == NULL) return 0;
+
+    ringbuf_handle_t rb = audio_element_get_input_ringbuf(i2s_stream);
+    if (rb == NULL) return 0;
+
+    int filled = rb_bytes_filled(rb);
+    int total = rb_get_size(rb);
+
+    if (total <= 0) return 0;
+    return (filled * 100) / total;
+}
+
 // Pre-buffer timer callback - wait for buffer to fill, then start I2S
 static void prebuffer_timer_callback(TimerHandle_t xTimer)
 {
     // During buffering, count up and start I2S when buffer is full
     if (player_status.state == PLAYER_STATE_BUFFERING) {
         prebuffer_counter++;
-        current_buffer_percent = (prebuffer_counter * 100) / PREBUFFER_TICKS;
+
+        // Use real buffer level during buffering
+        int real_level = get_real_buffer_level();
+        current_buffer_percent = real_level > 0 ? real_level : (prebuffer_counter * 100) / PREBUFFER_TICKS;
         if (current_buffer_percent > 100) current_buffer_percent = 100;
 
-        ESP_LOGI(TAG, "Buffering: %d%%", current_buffer_percent);
+        ESP_LOGI(TAG, "Buffering: %d%% (real: %d%%)", current_buffer_percent, real_level);
 
         if (prebuffer_counter >= PREBUFFER_TICKS) {
             ESP_LOGI(TAG, "Prebuffer complete, resuming I2S output");
@@ -124,10 +142,15 @@ static void prebuffer_timer_callback(TimerHandle_t xTimer)
             current_buffer_percent = 100;
         }
     }
-    // During playback, keep buffer at 100%
+    // During playback, monitor real buffer level
     else if (player_status.state == PLAYER_STATE_PLAYING) {
-        current_buffer_percent = 100;
+        current_buffer_percent = get_real_buffer_level();
         prebuffer_counter = PREBUFFER_TICKS;
+
+        // Warn if buffer is getting low (< 30%)
+        if (current_buffer_percent < 30 && current_buffer_percent > 0) {
+            ESP_LOGW(TAG, "Buffer low: %d%%", current_buffer_percent);
+        }
     }
     // Reset on stop/idle
     else {
@@ -315,8 +338,8 @@ esp_err_t audio_player_init(void)
     mp3_decoder_cfg_t mp3_cfg = DEFAULT_MP3_DECODER_CONFIG();
     mp3_cfg.task_stack = 8 * 1024;
     mp3_cfg.out_rb_size = 64 * 1024;  // 64KB output buffer (PSRAM)
-    mp3_cfg.task_prio = 20;  // High priority for audio processing
-    mp3_cfg.task_core = 1;   // Core 1 - isolated from WiFi/web on core 0
+    mp3_cfg.task_prio = 22;  // High priority for audio processing
+    mp3_cfg.task_core = 0;   // Core 0 - isolated from WiFi/web on core 0
     decoder = mp3_decoder_init(&mp3_cfg);
 
     // Konfiguracja filtra resampling (44100 -> 48000)
