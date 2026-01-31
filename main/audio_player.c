@@ -383,15 +383,15 @@ esp_err_t audio_player_init(void)
     }
     audio_pipeline_register(pipeline, i2s_stream, "i2s");
 
-    // Łączenie elementów: http -> mp3 -> filter -> eq -> i2s
+    // Łączenie elementów: http -> mp3 -> eq -> i2s (bez resamplera - oszczędność CPU)
     if (equalizer) {
-        const char *link_tag[5] = {"http", "mp3", "filter", "eq", "i2s"};
-        audio_pipeline_link(pipeline, &link_tag[0], 5);
-        ESP_LOGI(TAG, "Pipeline: http -> mp3 -> filter -> eq -> i2s");
-    } else {
-        const char *link_tag[4] = {"http", "mp3", "filter", "i2s"};
+        const char *link_tag[4] = {"http", "mp3", "eq", "i2s"};
         audio_pipeline_link(pipeline, &link_tag[0], 4);
-        ESP_LOGI(TAG, "Pipeline: http -> mp3 -> filter -> i2s (no equalizer)");
+        ESP_LOGI(TAG, "Pipeline: http -> mp3 -> eq -> i2s");
+    } else {
+        const char *link_tag[3] = {"http", "mp3", "i2s"};
+        audio_pipeline_link(pipeline, &link_tag[0], 3);
+        ESP_LOGI(TAG, "Pipeline: http -> mp3 -> i2s (no equalizer)");
     }
 
     // Konfiguracja event interface
