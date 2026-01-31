@@ -305,8 +305,8 @@ esp_err_t audio_player_init(void)
     http_cfg.enable_playlist_parser = true;
     http_cfg.task_stack = 8 * 1024;  // Increased stack for better network handling
     http_cfg.out_rb_size = 256 * 1024;  // 256KB buffer - ~16s at 128kbps (PSRAM)
-    http_cfg.task_prio = 22;  // High priority for HTTP stream  // Medium priority - buffer is large enough
-    http_cfg.task_core = 1;  // Move to core 1 with other audio tasks  // Pin HTTP task to core 0
+    http_cfg.task_prio = 22;  // High priority for HTTP stream
+    http_cfg.task_core = 0;  // Core 0 - together with WiFi for better network I/O
     // HTTPS: wyłącz weryfikację certyfikatów (oszczędza RAM)
     http_cfg.crt_bundle_attach = NULL;
     http_stream = http_stream_init(&http_cfg);
@@ -336,22 +336,10 @@ esp_err_t audio_player_init(void)
         eq_gain[i + 10] = db;  // Right channel
     }
 
-    // Konfiguracja equalizera 10-pasmowego
-    equalizer_cfg_t eq_cfg = DEFAULT_EQUALIZER_CONFIG();
-    eq_cfg.samplerate = 44100;  // 44.1kHz - ujednolicone dla wszystkich strumieni
-    eq_cfg.channel = 2;         // Stereo
-    eq_cfg.set_gain = eq_gain;
-    eq_cfg.out_rb_size = 32 * 1024;  // 32KB output buffer (PSRAM)
-    eq_cfg.task_stack = 4 * 1024;
-    eq_cfg.task_core = 1;   // Core 1 - isolated from WiFi/web on core 0
-    eq_cfg.task_prio = 21;  // High priority for audio processing
-    equalizer = equalizer_init(&eq_cfg);
-    if (equalizer == NULL) {
-        ESP_LOGE(TAG, "Failed to create equalizer");
-        // Continue without equalizer - not fatal
-    } else {
-        ESP_LOGI(TAG, "10-band equalizer initialized");
-    }
+    // Equalizer wyłączony - zużywa ~28% CPU
+    // TODO: Zoptymalizować EQ lub użyć sprzętowego DSP
+    equalizer = NULL;
+    ESP_LOGI(TAG, "Equalizer disabled to save CPU");
 
     // Konfiguracja I2S stream (wyjście audio)
     i2s_stream_cfg_t i2s_cfg = I2S_STREAM_CFG_DEFAULT();
