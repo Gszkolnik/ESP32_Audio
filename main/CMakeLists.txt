@@ -1,0 +1,44 @@
+idf_component_register(
+    SRCS
+        "main.c"
+        "audio_player.c"
+        "audio_settings.c"
+        "wifi_manager.c"
+        "web_server.c"
+        "mqtt_client.c"
+        "radio_stations.c"
+        "radio_browser.c"
+        "alarm_manager.c"
+        "spotify_api.c"
+        "tone_generator.c"
+        "bluetooth_sink.c"
+        "bluetooth_source.c"
+        "sdcard_player.c"
+        "aux_input.c"
+        "battery_monitor.c"
+        "input_controls.c"
+        "piped_client.c"
+        "ota_update.c"
+    INCLUDE_DIRS "." "../"
+    EMBED_FILES
+        "../web/index.html"
+        "../web/app.js"
+        "../web/style.css"
+    REQUIRES
+        nvs_flash
+        esp_wifi
+        esp_http_server
+        esp_http_client
+        mqtt
+        json
+        audio_pipeline
+        audio_stream
+        audio_hal
+        audio_board
+        esp_peripherals
+        bt
+        esp_adc
+        fatfs
+        sdmmc
+        app_update
+)

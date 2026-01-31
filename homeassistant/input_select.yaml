@@ -1,0 +1,14 @@
+# ============================================
+# ESP32 Audio - Input Helpers
+# ============================================
+
+esp32_audio_station:
+  name: "ESP32 Radio Station"
+  icon: mdi:radio
+  options:
+    - "VOX FM Poznan"
+    - "RMF FM"
+    - "Radio ZET"
+    - "Eska Rock"
+    - "PR Trojka"
+    - "ChilloutZone"

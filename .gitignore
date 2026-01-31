@@ -1,0 +1,22 @@
+# Build output
+build/
+build_log.txt
+
+# IDE
+.vscode/
+.idea/
+
+# ESP-IDF
+sdkconfig.old
+dependencies.lock
+
+# Managed components (downloaded automatically)
+managed_components/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# OS
+.DS_Store
+Thumbs.db

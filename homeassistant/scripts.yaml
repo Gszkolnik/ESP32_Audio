@@ -1,0 +1,209 @@
+# ============================================
+# ESP32 Audio - Scripts
+# ============================================
+# Dodaj do scripts.yaml lub użyj script: !include scripts.yaml
+# ============================================
+
+esp32_audio_play_station:
+  alias: "ESP32 - Play Station by ID"
+  description: "Odtwarza stację radiową po ID"
+  icon: mdi:radio
+  fields:
+    station_id:
+      description: "Station ID (1-6)"
+      example: 1
+      selector:
+        number:
+          min: 1
+          max: 10
+          mode: box
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/station"
+        payload: "{{ station_id }}"
+  mode: single
+
+esp32_audio_play_url:
+  alias: "ESP32 - Play URL"
+  description: "Odtwarza stream z podanego URL"
+  icon: mdi:link
+  fields:
+    url:
+      description: "Stream URL"
+      example: "https://stream.example.com/radio.mp3"
+      selector:
+        text:
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/station"
+        payload: '{"url":"{{ url }}"}'
+  mode: single
+
+esp32_audio_set_volume:
+  alias: "ESP32 - Set Volume"
+  description: "Ustawia głośność"
+  icon: mdi:volume-medium
+  fields:
+    volume:
+      description: "Volume level (0-100)"
+      example: 50
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/volume"
+        payload: "{{ volume }}"
+  mode: single
+
+esp32_audio_set_eq_preset:
+  alias: "ESP32 - Set EQ Preset"
+  description: "Ustawia preset equalizera"
+  icon: mdi:equalizer
+  fields:
+    preset:
+      description: "Preset name"
+      example: "Rock"
+      selector:
+        select:
+          options:
+            - "Flat"
+            - "Rock"
+            - "Pop"
+            - "Jazz"
+            - "Classical"
+            - "Bass+"
+            - "Vocal"
+            - "Electronic"
+            - "Acoustic"
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/eq"
+        payload: '{"preset":"{{ preset }}"}'
+  mode: single
+
+esp32_audio_set_eq_band:
+  alias: "ESP32 - Set EQ Band"
+  description: "Ustawia pojedyncze pasmo equalizera"
+  icon: mdi:equalizer
+  fields:
+    band:
+      description: "Band index (0-9: 31Hz to 16kHz)"
+      example: 0
+      selector:
+        number:
+          min: 0
+          max: 9
+          mode: box
+    value:
+      description: "Value 0-24 (12=0dB)"
+      example: 18
+      selector:
+        number:
+          min: 0
+          max: 24
+          mode: slider
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/eq"
+        payload: '{"band":{{ band }},"value":{{ value }}}'
+  mode: single
+
+esp32_audio_alarm_toggle:
+  alias: "ESP32 - Toggle Alarm"
+  description: "Włącza lub wyłącza alarm"
+  icon: mdi:alarm
+  fields:
+    alarm_id:
+      description: "Alarm ID"
+      example: 1
+      selector:
+        number:
+          min: 1
+          max: 10
+          mode: box
+    enabled:
+      description: "Enable or disable"
+      example: true
+      selector:
+        boolean:
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/alarm"
+        payload: '{"{% if enabled %}enable{% else %}disable{% endif %}":{{ alarm_id }}}'
+  mode: single
+
+esp32_audio_wake_up:
+  alias: "ESP32 - Wake Up Routine"
+  description: "Poranna rutyna budzenia - stopniowo zwiększa głośność"
+  icon: mdi:weather-sunny
+  fields:
+    station_id:
+      description: "Station to play"
+      example: 1
+      selector:
+        number:
+          min: 1
+          max: 10
+    target_volume:
+      description: "Target volume"
+      example: 60
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 5
+  sequence:
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/volume"
+        payload: "10"
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/station"
+        payload: "{{ station_id | default(1) }}"
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/player"
+        payload: "play"
+    - repeat:
+        count: 5
+        sequence:
+          - delay:
+              seconds: 30
+          - service: mqtt.publish
+            data:
+              topic: "esp32_audio/cmd/volume"
+              payload: "{{ 10 + (repeat.index * 10) }}"
+  mode: single
+
+esp32_audio_sleep_timer:
+  alias: "ESP32 - Sleep Timer"
+  description: "Wyłącza odtwarzacz po określonym czasie"
+  icon: mdi:timer-outline
+  fields:
+    minutes:
+      description: "Minutes until stop"
+      example: 30
+      selector:
+        number:
+          min: 1
+          max: 120
+          unit_of_measurement: "min"
+  sequence:
+    - delay:
+        minutes: "{{ minutes }}"
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/player"
+        payload: "stop"
+  mode: restart

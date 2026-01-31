@@ -1,0 +1,26 @@
+# ============================================
+# ESP32 Audio - MQTT Select Controls
+# ============================================
+
+# EQ Preset selector
+- name: "ESP32 Audio EQ Preset Select"
+  unique_id: esp32_audio_eq_select
+  state_topic: "esp32_audio/state/eq"
+  value_template: "{{ value_json.preset }}"
+  command_topic: "esp32_audio/cmd/eq"
+  command_template: '{"preset":"{{ value }}"}'
+  options:
+    - "Flat"
+    - "Rock"
+    - "Pop"
+    - "Jazz"
+    - "Classical"
+    - "Bass+"
+    - "Vocal"
+    - "Electronic"
+    - "Acoustic"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:tune-variant
+  device:
+    identifiers:
+      - esp32_audio_player

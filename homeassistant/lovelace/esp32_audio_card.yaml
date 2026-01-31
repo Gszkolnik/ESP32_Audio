@@ -1,0 +1,121 @@
+# ============================================
+# ESP32 Audio - Lovelace Dashboard Card
+# ============================================
+# Skopiuj do swojego dashboardu (tryb YAML)
+# lub użyj edytora wizualnego
+# ============================================
+
+type: vertical-stack
+cards:
+  # Header z nazwą i statusem
+  - type: markdown
+    content: |
+      ## ESP32 Audio Player
+      **Sypialnia**
+
+  # Główne informacje o odtwarzaniu
+  - type: entities
+    entities:
+      - entity: sensor.esp32_audio_state
+        name: "Stan"
+      - entity: sensor.esp32_audio_now_playing
+        name: "Teraz gra"
+      - entity: sensor.esp32_audio_station
+        name: "Stacja"
+
+  # Kontrolki odtwarzania
+  - type: horizontal-stack
+    cards:
+      - type: button
+        entity: button.esp32_audio_previous
+        icon: mdi:skip-previous
+        name: ""
+        tap_action:
+          action: toggle
+        show_name: false
+      - type: button
+        entity: button.esp32_audio_stop
+        icon: mdi:stop
+        name: ""
+        tap_action:
+          action: toggle
+        show_name: false
+      - type: button
+        entity: button.esp32_audio_play
+        icon: mdi:play
+        name: ""
+        tap_action:
+          action: toggle
+        show_name: false
+      - type: button
+        entity: button.esp32_audio_pause
+        icon: mdi:pause
+        name: ""
+        tap_action:
+          action: toggle
+        show_name: false
+      - type: button
+        entity: button.esp32_audio_next
+        icon: mdi:skip-next
+        name: ""
+        tap_action:
+          action: toggle
+        show_name: false
+
+  # Głośność
+  - type: entities
+    entities:
+      - entity: number.esp32_audio_volume_control
+        name: "Głośność"
+      - entity: binary_sensor.esp32_audio_muted
+        name: "Wyciszony"
+
+  # Wybór stacji
+  - type: entities
+    title: "Stacje radiowe"
+    entities:
+      - entity: input_select.esp32_audio_station
+        name: "Wybierz stację"
+
+  # Equalizer
+  - type: entities
+    title: "Equalizer"
+    entities:
+      - entity: select.esp32_audio_eq_preset_select
+        name: "Preset"
+      - entity: number.esp32_audio_balance
+        name: "Balans"
+
+  # Efekty audio
+  - type: entities
+    title: "Efekty audio"
+    entities:
+      - entity: switch.esp32_audio_bass_boost
+        name: "Bass Boost"
+      - entity: switch.esp32_audio_loudness
+        name: "Loudness"
+      - entity: switch.esp32_audio_stereo_wide
+        name: "Stereo Wide"
+
+  # Alarm
+  - type: horizontal-stack
+    cards:
+      - type: button
+        entity: button.esp32_audio_alarm_stop
+        icon: mdi:alarm-off
+        name: "Stop Alarm"
+        tap_action:
+          action: toggle
+      - type: button
+        entity: button.esp32_audio_alarm_snooze
+        icon: mdi:alarm-snooze
+        name: "Drzemka"
+        tap_action:
+          action: toggle
+
+  # System
+  - type: entities
+    title: "System"
+    entities:
+      - entity: button.esp32_audio_reboot
+        name: "Restart urządzenia"

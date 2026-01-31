@@ -1,0 +1,16 @@
+# ============================================
+# ESP32 Audio - MQTT Binary Sensors
+# ============================================
+
+# Czy wyciszony
+- name: "ESP32 Audio Muted"
+  unique_id: esp32_audio_muted
+  state_topic: "esp32_audio/state/volume"
+  value_template: "{{ value_json.muted }}"
+  payload_on: "true"
+  payload_off: "false"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:volume-off
+  device:
+    identifiers:
+      - esp32_audio_player

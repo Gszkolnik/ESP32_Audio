@@ -1,0 +1,35 @@
+# ============================================
+# ESP32 Audio - MQTT Number Controls
+# ============================================
+
+# Głośność
+- name: "ESP32 Audio Volume Control"
+  unique_id: esp32_audio_volume_control
+  state_topic: "esp32_audio/state/volume"
+  value_template: "{{ value_json.volume }}"
+  command_topic: "esp32_audio/cmd/volume"
+  min: 0
+  max: 100
+  step: 5
+  unit_of_measurement: "%"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:volume-medium
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Balans
+- name: "ESP32 Audio Balance"
+  unique_id: esp32_audio_balance
+  state_topic: "esp32_audio/state/eq"
+  value_template: "{{ value_json.balance }}"
+  command_topic: "esp32_audio/cmd/eq"
+  command_template: '{"balance":{{ value }}}'
+  min: -100
+  max: 100
+  step: 10
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:arrow-left-right
+  device:
+    identifiers:
+      - esp32_audio_player

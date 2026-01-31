@@ -1,0 +1,75 @@
+# ============================================
+# ESP32 Audio - MQTT Sensors
+# ============================================
+
+# Stan odtwarzacza
+- name: "ESP32 Audio State"
+  unique_id: esp32_audio_state
+  state_topic: "esp32_audio/state/player"
+  value_template: "{{ value_json.state }}"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:speaker
+  device:
+    identifiers:
+      - esp32_audio_player
+    name: "ESP32 Audio Player"
+    manufacturer: "Espressif"
+    model: "ESP32-LyraT V4.3"
+    sw_version: "1.0.0"
+    suggested_area: "Sypialnia"
+
+# Głośność
+- name: "ESP32 Audio Volume"
+  unique_id: esp32_audio_volume
+  state_topic: "esp32_audio/state/volume"
+  value_template: "{{ value_json.volume }}"
+  unit_of_measurement: "%"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:volume-high
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Aktualnie odtwarzane
+- name: "ESP32 Audio Now Playing"
+  unique_id: esp32_audio_now_playing
+  state_topic: "esp32_audio/state/media"
+  value_template: "{{ value_json.title }}"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:music
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Artysta
+- name: "ESP32 Audio Artist"
+  unique_id: esp32_audio_artist
+  state_topic: "esp32_audio/state/media"
+  value_template: "{{ value_json.artist | default('') }}"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:account-music
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Aktualna stacja
+- name: "ESP32 Audio Station"
+  unique_id: esp32_audio_station
+  state_topic: "esp32_audio/state/media"
+  value_template: "{{ value_json.station_name | default('') }}"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:radio
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# EQ Preset
+- name: "ESP32 Audio EQ Preset"
+  unique_id: esp32_audio_eq_preset
+  state_topic: "esp32_audio/state/eq"
+  value_template: "{{ value_json.preset }}"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:equalizer
+  device:
+    identifiers:
+      - esp32_audio_player

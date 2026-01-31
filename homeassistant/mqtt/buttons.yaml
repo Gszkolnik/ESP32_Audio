@@ -1,0 +1,125 @@
+# ============================================
+# ESP32 Audio - MQTT Buttons
+# ============================================
+
+# Play
+- name: "ESP32 Audio Play"
+  unique_id: esp32_audio_btn_play
+  command_topic: "esp32_audio/cmd/player"
+  payload_press: "play"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:play
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Pause
+- name: "ESP32 Audio Pause"
+  unique_id: esp32_audio_btn_pause
+  command_topic: "esp32_audio/cmd/player"
+  payload_press: "pause"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:pause
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Stop
+- name: "ESP32 Audio Stop"
+  unique_id: esp32_audio_btn_stop
+  command_topic: "esp32_audio/cmd/player"
+  payload_press: "stop"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:stop
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Next Station
+- name: "ESP32 Audio Next"
+  unique_id: esp32_audio_btn_next
+  command_topic: "esp32_audio/cmd/player"
+  payload_press: "next"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:skip-next
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Previous Station
+- name: "ESP32 Audio Previous"
+  unique_id: esp32_audio_btn_prev
+  command_topic: "esp32_audio/cmd/player"
+  payload_press: "prev"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:skip-previous
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Mute Toggle
+- name: "ESP32 Audio Mute"
+  unique_id: esp32_audio_btn_mute
+  command_topic: "esp32_audio/cmd/volume"
+  payload_press: "mute"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:volume-mute
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Volume Up
+- name: "ESP32 Audio Volume Up"
+  unique_id: esp32_audio_btn_vol_up
+  command_topic: "esp32_audio/cmd/volume"
+  payload_press: "up"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:volume-plus
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Volume Down
+- name: "ESP32 Audio Volume Down"
+  unique_id: esp32_audio_btn_vol_down
+  command_topic: "esp32_audio/cmd/volume"
+  payload_press: "down"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:volume-minus
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Stop Alarm
+- name: "ESP32 Audio Alarm Stop"
+  unique_id: esp32_audio_btn_alarm_stop
+  command_topic: "esp32_audio/cmd/alarm"
+  payload_press: "stop"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:alarm-off
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Snooze Alarm
+- name: "ESP32 Audio Alarm Snooze"
+  unique_id: esp32_audio_btn_alarm_snooze
+  command_topic: "esp32_audio/cmd/alarm"
+  payload_press: "snooze"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:alarm-snooze
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Reboot
+- name: "ESP32 Audio Reboot"
+  unique_id: esp32_audio_btn_reboot
+  command_topic: "esp32_audio/cmd/system"
+  payload_press: "reboot"
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:restart
+  device_class: restart
+  device:
+    identifiers:
+      - esp32_audio_player

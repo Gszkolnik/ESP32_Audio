@@ -1,0 +1,18 @@
+# ============================================
+# ESP32 Audio Player - Home Assistant Configuration
+# ============================================
+# Dodaj te linie do swojego configuration.yaml
+# lub skopiuj pliki do odpowiednich lokalizacji
+# ============================================
+
+# MQTT - dodaj do istniejącej sekcji mqtt: lub utwórz nową
+mqtt: !include mqtt.yaml
+
+# Input helpers
+input_select: !include input_select.yaml
+
+# Automations - dodaj do automations.yaml lub użyj include
+automation: !include automations.yaml
+
+# Scripts - dodaj do scripts.yaml lub użyj include
+script: !include scripts.yaml

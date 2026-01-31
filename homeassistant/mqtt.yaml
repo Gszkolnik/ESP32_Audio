@@ -1,0 +1,13 @@
+# ============================================
+# ESP32 Audio Player - MQTT Configuration
+# ============================================
+# Dodaj zawartość do sekcji mqtt: w configuration.yaml
+# lub użyj: mqtt: !include mqtt.yaml
+# ============================================
+
+sensor: !include mqtt/sensors.yaml
+binary_sensor: !include mqtt/binary_sensors.yaml
+switch: !include mqtt/switches.yaml
+number: !include mqtt/numbers.yaml
+select: !include mqtt/selects.yaml
+button: !include mqtt/buttons.yaml

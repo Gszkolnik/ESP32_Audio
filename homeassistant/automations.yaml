@@ -1,0 +1,71 @@
+# ============================================
+# ESP32 Audio - Automations
+# ============================================
+# Dodaj do automations.yaml lub użyj automation: !include automations.yaml
+# ============================================
+
+- id: esp32_audio_station_select
+  alias: "ESP32 Audio - Select Station"
+  description: "Zmienia stację radiową po wybraniu z listy"
+  trigger:
+    - platform: state
+      entity_id: input_select.esp32_audio_station
+  condition: []
+  action:
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/station"
+        payload: >
+          {% set stations = {
+            "VOX FM Poznan": 1,
+            "RMF FM": 2,
+            "Radio ZET": 3,
+            "Eska Rock": 4,
+            "PR Trojka": 5,
+            "ChilloutZone": 6
+          } %}
+          {{ stations[trigger.to_state.state] | default(1) }}
+  mode: single
+
+- id: esp32_audio_morning_alarm
+  alias: "ESP32 Audio - Poranny Alarm"
+  description: "Przykładowa automatyzacja budzika"
+  trigger:
+    - platform: time
+      at: "07:00:00"
+  condition:
+    - condition: time
+      weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+  action:
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/volume"
+        payload: "50"
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/station"
+        payload: "1"
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/player"
+        payload: "play"
+  mode: single
+
+- id: esp32_audio_goodnight
+  alias: "ESP32 Audio - Dobranoc"
+  description: "Wyłącza odtwarzacz o określonej godzinie"
+  trigger:
+    - platform: time
+      at: "23:00:00"
+  condition: []
+  action:
+    - service: mqtt.publish
+      data:
+        topic: "esp32_audio/cmd/player"
+        payload: "stop"
+  mode: single

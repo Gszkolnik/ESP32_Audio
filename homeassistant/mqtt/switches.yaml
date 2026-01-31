@@ -1,0 +1,51 @@
+# ============================================
+# ESP32 Audio - MQTT Switches
+# ============================================
+
+# Bass Boost
+- name: "ESP32 Audio Bass Boost"
+  unique_id: esp32_audio_bass_boost
+  state_topic: "esp32_audio/state/eq"
+  value_template: "{{ value_json.bass_boost }}"
+  state_on: "true"
+  state_off: "false"
+  command_topic: "esp32_audio/cmd/eq"
+  payload_on: '{"bass_boost":true}'
+  payload_off: '{"bass_boost":false}'
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:speaker-boost
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Loudness
+- name: "ESP32 Audio Loudness"
+  unique_id: esp32_audio_loudness
+  state_topic: "esp32_audio/state/eq"
+  value_template: "{{ value_json.loudness }}"
+  state_on: "true"
+  state_off: "false"
+  command_topic: "esp32_audio/cmd/eq"
+  payload_on: '{"loudness":true}'
+  payload_off: '{"loudness":false}'
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:volume-vibrate
+  device:
+    identifiers:
+      - esp32_audio_player
+
+# Stereo Wide
+- name: "ESP32 Audio Stereo Wide"
+  unique_id: esp32_audio_stereo_wide
+  state_topic: "esp32_audio/state/eq"
+  value_template: "{{ value_json.stereo_wide }}"
+  state_on: "true"
+  state_off: "false"
+  command_topic: "esp32_audio/cmd/eq"
+  payload_on: '{"stereo_wide":true}'
+  payload_off: '{"stereo_wide":false}'
+  availability_topic: "esp32_audio/availability"
+  icon: mdi:surround-sound
+  device:
+    identifiers:
+      - esp32_audio_player
