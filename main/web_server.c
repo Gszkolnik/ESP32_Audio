@@ -34,6 +34,7 @@
 #include "ota_update.h"
 #include "bluetooth_source.h"
 #include "audio_settings.h"
+#include "system_diag.h"
 
 static const char *TAG = "WEB_SERVER";
 
@@ -123,6 +124,7 @@ static esp_err_t api_status_handler(httpd_req_t *req)
     cJSON_AddStringToObject(root, "artist", status->current_artist);
     cJSON_AddStringToObject(root, "ip", wifi_manager_get_ip());
     cJSON_AddNumberToObject(root, "rssi", wifi_manager_get_rssi());
+    cJSON_AddNumberToObject(root, "buffer_level", audio_player_get_buffer_level());
 
     // Czas
     time_t now = alarm_manager_get_time();
@@ -1399,6 +1401,7 @@ static esp_err_t api_system_info_handler(httpd_req_t *req)
     // WiFi
     cJSON_AddStringToObject(root, "ip", wifi_manager_get_ip());
     cJSON_AddNumberToObject(root, "rssi", wifi_manager_get_rssi());
+    cJSON_AddNumberToObject(root, "buffer_level", audio_player_get_buffer_level());
 
     // Current source
     audio_source_mode_t source = input_controls_get_current_source();
@@ -1434,6 +1437,16 @@ static esp_err_t api_system_info_handler(httpd_req_t *req)
 }
 
 // ============================================
+// API handlers - System Diagnostics
+static esp_err_t api_system_diag_handler(httpd_req_t *req) {
+    add_cors_headers(req);
+    httpd_resp_set_type(req, "application/json");
+    char *json = system_diag_get_json();
+    if (json) { httpd_resp_sendstr(req, json); free(json); }
+    else { httpd_resp_sendstr(req, "{\"error\":\"Failed\"}"); }
+    return ESP_OK;
+}
+
 // API handlers - Piped (YouTube Music)
 // ============================================
 
@@ -2269,6 +2282,7 @@ esp_err_t web_server_init(void)
     config.max_uri_handlers = 64;  // Increased for all API endpoints
     config.stack_size = 8192;
     config.uri_match_fn = httpd_uri_match_wildcard;
+    config.core_id = 0;  // Pin web server to core 0, leave core 1 for audio
 
     esp_err_t ret = httpd_start(&server, &config);
     if (ret != ESP_OK) {
@@ -2333,6 +2347,7 @@ esp_err_t web_server_init(void)
 
     // System Info API
     httpd_uri_t sysinfo_uri = { .uri = "/api/system", .method = HTTP_GET, .handler = api_system_info_handler };
+    httpd_uri_t sysdiag_uri = { .uri = "/api/system/diag", .method = HTTP_GET, .handler = api_system_diag_handler };
 
     // Piped (YouTube Music) API
     httpd_uri_t piped_search_uri = { .uri = "/api/piped/search", .method = HTTP_GET, .handler = api_piped_search_handler };
@@ -2433,6 +2448,7 @@ esp_err_t web_server_init(void)
     // Rejestracja - Battery & System API
     httpd_register_uri_handler(server, &battery_uri);
     httpd_register_uri_handler(server, &sysinfo_uri);
+    httpd_register_uri_handler(server, &sysdiag_uri);
 
     // Rejestracja - Piped API
     httpd_register_uri_handler(server, &piped_search_uri);

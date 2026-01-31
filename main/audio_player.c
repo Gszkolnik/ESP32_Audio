@@ -87,6 +87,55 @@ static void set_state(player_state_t state)
 // Flaga do zapobiegania wielokrotnym reconnect
 static bool reconnect_in_progress = false;
 
+// Pre-buffering configuration
+#define PREBUFFER_THRESHOLD_KB  128  // Start playback when 128KB buffered (~8s at 128kbps)
+#define PREBUFFER_CHECK_MS      100  // Check buffer every 100ms
+#define HTTP_BUFFER_SIZE_KB     256  // Total HTTP buffer size in KB
+
+// Buffer monitoring
+static int current_buffer_percent = 0;
+static int prebuffer_counter = 0;
+static TimerHandle_t prebuffer_timer = NULL;
+
+#define PREBUFFER_TICKS  30  // 30 x 100ms = 3 seconds prebuffering
+
+// Get buffer fill level (0-100%)
+int audio_player_get_buffer_level(void)
+{
+    return current_buffer_percent;
+}
+
+// Pre-buffer timer callback - wait for buffer to fill, then start I2S
+static void prebuffer_timer_callback(TimerHandle_t xTimer)
+{
+    // During buffering, count up and start I2S when buffer is full
+    if (player_status.state == PLAYER_STATE_BUFFERING) {
+        prebuffer_counter++;
+        current_buffer_percent = (prebuffer_counter * 100) / PREBUFFER_TICKS;
+        if (current_buffer_percent > 100) current_buffer_percent = 100;
+
+        ESP_LOGI(TAG, "Buffering: %d%%", current_buffer_percent);
+
+        if (prebuffer_counter >= PREBUFFER_TICKS) {
+            ESP_LOGI(TAG, "Prebuffer complete, resuming I2S output");
+            // Resume I2S - start playing from buffer
+            audio_element_resume(i2s_stream, 0, portMAX_DELAY);
+            set_state(PLAYER_STATE_PLAYING);
+            current_buffer_percent = 100;
+        }
+    }
+    // During playback, keep buffer at 100%
+    else if (player_status.state == PLAYER_STATE_PLAYING) {
+        current_buffer_percent = 100;
+        prebuffer_counter = PREBUFFER_TICKS;
+    }
+    // Reset on stop/idle
+    else {
+        prebuffer_counter = 0;
+        current_buffer_percent = 0;
+    }
+}
+
 // Jednorazowy task do zmiany stacji (wymaga większego stosu niż event task)
 static void next_station_task(void *pvParameters)
 {
@@ -256,8 +305,8 @@ esp_err_t audio_player_init(void)
     http_cfg.enable_playlist_parser = true;
     http_cfg.task_stack = 8 * 1024;  // Increased stack for better network handling
     http_cfg.out_rb_size = 256 * 1024;  // 256KB buffer - ~16s at 128kbps (PSRAM)
-    http_cfg.task_prio = 10;  // Medium priority - buffer is large enough
-    http_cfg.task_core = 0;  // Pin HTTP task to core 0
+    http_cfg.task_prio = 22;  // High priority for HTTP stream  // Medium priority - buffer is large enough
+    http_cfg.task_core = 1;  // Move to core 1 with other audio tasks  // Pin HTTP task to core 0
     // HTTPS: wyłącz weryfikację certyfikatów (oszczędza RAM)
     http_cfg.crt_bundle_attach = NULL;
     http_stream = http_stream_init(&http_cfg);
@@ -272,9 +321,9 @@ esp_err_t audio_player_init(void)
 
     // Konfiguracja filtra resampling (44100 -> 48000)
     rsp_filter_cfg_t rsp_cfg = DEFAULT_RESAMPLE_FILTER_CONFIG();
-    rsp_cfg.src_rate = 44100;
+    rsp_cfg.src_rate = 48000;
     rsp_cfg.src_ch = 2;
-    rsp_cfg.dest_rate = 48000;
+    rsp_cfg.dest_rate = 44100;
     rsp_cfg.dest_ch = 2;
     rsp_filter = rsp_filter_init(&rsp_cfg);
 
@@ -289,7 +338,7 @@ esp_err_t audio_player_init(void)
 
     // Konfiguracja equalizera 10-pasmowego
     equalizer_cfg_t eq_cfg = DEFAULT_EQUALIZER_CONFIG();
-    eq_cfg.samplerate = 48000;  // 48kHz - standard dla wielu stacji (np. VOX FM)
+    eq_cfg.samplerate = 44100;  // 44.1kHz - ujednolicone dla wszystkich strumieni
     eq_cfg.channel = 2;         // Stereo
     eq_cfg.set_gain = eq_gain;
     eq_cfg.out_rb_size = 32 * 1024;  // 32KB output buffer (PSRAM)
@@ -310,6 +359,7 @@ esp_err_t audio_player_init(void)
     i2s_cfg.out_rb_size = 64 * 1024;  // 64KB ringbuffer (PSRAM)
     i2s_cfg.task_prio = 23;  // Maximum priority for realtime audio
     i2s_cfg.task_core = 1;  // Pin I2S to core 1 (isolated from WiFi on core 0)
+    i2s_cfg.stack_in_ext = true;  // Use PSRAM for I2S task stack
     // Bufory DMA - bezpieczna konfiguracja
     i2s_cfg.chan_cfg.dma_desc_num = 8;     // 8 deskryptorów DMA
     i2s_cfg.chan_cfg.dma_frame_num = 1024; // 1024 ramki na deskryptor
@@ -335,13 +385,13 @@ esp_err_t audio_player_init(void)
 
     // Łączenie elementów: http -> mp3 -> eq -> i2s
     if (equalizer) {
-        const char *link_tag[4] = {"http", "mp3", "eq", "i2s"};
-        audio_pipeline_link(pipeline, &link_tag[0], 4);
-        ESP_LOGI(TAG, "Pipeline: http -> mp3 -> eq -> i2s");
+        const char *link_tag[3] = {"http", "mp3", "i2s"};
+        audio_pipeline_link(pipeline, &link_tag[0], 3);
+        ESP_LOGI(TAG, "Pipeline: http -> mp3 -> filter -> eq -> i2s");
     } else {
         const char *link_tag[3] = {"http", "mp3", "i2s"};
         audio_pipeline_link(pipeline, &link_tag[0], 3);
-        ESP_LOGI(TAG, "Pipeline: http -> mp3 -> i2s (no equalizer)");
+        ESP_LOGI(TAG, "Pipeline: http -> mp3 -> filter -> i2s (no equalizer)");
     }
 
     // Konfiguracja event interface
@@ -357,7 +407,7 @@ esp_err_t audio_player_init(void)
     audio_hal_set_volume(board_handle->audio_hal, player_status.volume);
 
     // Uruchom task obsługi zdarzeń
-    xTaskCreate(audio_event_task, "audio_event", 4096, NULL, 5, &event_task_handle);
+    xTaskCreate(audio_event_task, "audio_event", 4096, NULL, 15, &event_task_handle);  // Increased priority
 
     ESP_LOGI(TAG, "Audio player initialized successfully");
     return ESP_OK;
@@ -423,16 +473,34 @@ esp_err_t audio_player_play_url(const char *url)
     audio_pipeline_reset_ringbuffer(pipeline);
     audio_pipeline_reset_elements(pipeline);
 
-    // Uruchom pipeline
-    ESP_LOGI(TAG, "Starting pipeline...");
+    // Uruchom pipeline z pre-bufferingiem
+    ESP_LOGI(TAG, "Starting pipeline with prebuffering...");
+
     esp_err_t ret = audio_pipeline_run(pipeline);
+    
+    // Pause I2S immediately after pipeline starts - buffer will fill
     if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "Pipeline started successfully");
+        audio_element_pause(i2s_stream);
+        ESP_LOGI(TAG, "I2S paused, filling buffer...");
+    }
+    if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "Pipeline started, monitoring buffer...");
         player_status.source = AUDIO_SOURCE_HTTP;
-        set_state(PLAYER_STATE_PLAYING);
+        set_state(PLAYER_STATE_BUFFERING);  // Start as buffering, timer will switch to playing
 
         // Zapisz URL dla autostartu
         audio_settings_set_last_url(url);
+
+        // Create prebuffer timer if not exists
+        if (prebuffer_timer == NULL) {
+            prebuffer_timer = xTimerCreate("prebuf", pdMS_TO_TICKS(PREBUFFER_CHECK_MS),
+                                           pdTRUE, NULL, prebuffer_timer_callback);
+        }
+
+        // Reset and start buffer monitoring
+        prebuffer_counter = 0;
+        current_buffer_percent = 0;
+        xTimerStart(prebuffer_timer, 0);
     } else {
         ESP_LOGE(TAG, "Failed to start pipeline: %s", esp_err_to_name(ret));
     }

@@ -19,6 +19,7 @@ idf_component_register(
         "input_controls.c"
         "piped_client.c"
         "ota_update.c"
+        "system_diag.c"
     INCLUDE_DIRS "." "../"
     EMBED_FILES
         "../web/index.html"

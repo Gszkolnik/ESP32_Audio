@@ -19,7 +19,7 @@ static const char *TAG = "AUX_INPUT";
 // ============================================
 // Configuration
 // ============================================
-#define AUX_DETECT_CHECK_INTERVAL_MS    200
+#define AUX_DETECT_CHECK_INTERVAL_MS    1000  // Reduced from 200ms to save CPU
 #define AUX_SIGNAL_THRESHOLD            100     // ADC threshold for signal detection
 #define AUX_SIGNAL_SAMPLES              10      // Samples for signal level averaging
 

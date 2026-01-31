@@ -73,7 +73,7 @@ static void trigger_alarm(alarm_t *alarm) {
 static void alarm_check_task(void *pvParameters)
 {
     while (1) {
-        vTaskDelay(pdMS_TO_TICKS(1000));  // Sprawdzaj co sekundę
+        vTaskDelay(pdMS_TO_TICKS(5000));  // Sprawdzaj co 5 sekund - oszczędność CPU
 
         if (!time_synced) {
             continue;

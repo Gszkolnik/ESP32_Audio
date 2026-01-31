@@ -59,6 +59,9 @@ esp_err_t audio_player_mute(bool mute);
 player_status_t *audio_player_get_status(void);
 void audio_player_register_callback(player_state_callback_t callback);
 
+// Buffer monitoring
+int audio_player_get_buffer_level(void);  // Returns 0-100%
+
 // Equalizer control
 esp_err_t audio_player_set_eq_band(int band, int gain_db);
 esp_err_t audio_player_set_eq_all_bands(const int *gains_db);
